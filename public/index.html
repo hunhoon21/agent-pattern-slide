@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>멀티 에이전트 패턴 데모</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="css/slides.css">
+  <link rel="stylesheet" href="css/chatbot.css">
+  <link rel="stylesheet" href="css/results.css">
+</head>
+<body>
+  <div class="slides-container">
+    <!-- Slide 1: Title -->
+    <section class="slide active" id="slide-1">
+      <div class="slide-content title-slide">
+        <h1>멀티 에이전트 패턴</h1>
+        <p class="subtitle">실제 작동하는 에이전트 패턴 데모</p>
+        <p class="powered-by">Powered by OpenAI Agents SDK</p>
+      </div>
+    </section>
+
+    <!-- Slide 2: Reflection Loop - Explanation -->
+    <section class="slide" id="slide-2">
+      <div class="slide-content explanation-slide">
+        <div class="slide-header">
+          <h2>리플렉션 루프 <span class="en">(Reflection Loop)</span></h2>
+          <p class="slide-subtitle">자기 성찰을 통한 반복 개선 패턴</p>
+        </div>
+        <div class="two-column">
+          <div class="diagram-area" id="reflection-diagram">
+            <!-- SVG diagram will be loaded here or inline -->
+          </div>
+          <div class="description-area">
+            <ul class="pattern-points">
+              <li><span class="agent-badge blue">생성기</span>Generator가 초안을 작성합니다</li>
+              <li><span class="agent-badge orange">비평가</span>Critic가 품질 기준에 따라 평가합니다</li>
+              <li><span class="agent-badge green">개선기</span>피드백을 반영하여 개선합니다</li>
+              <li><span class="agent-badge purple">최종</span>품질 임계값 충족 시 종료합니다</li>
+            </ul>
+            <div class="use-cases">
+              <h4>사용 사례</h4>
+              <p>문서 작성, 코드 리뷰, 콘텐츠 품질 개선</p>
+            </div>
+            <div class="pros-cons">
+              <div class="pros">
+                <h4>장점</h4>
+                <ul>
+                  <li>반복적 개선으로 출력 품질 향상</li>
+                  <li>자동 품질 검증 내장</li>
+                  <li>구현이 간단하고 직관적</li>
+                </ul>
+              </div>
+              <div class="cons">
+                <h4>단점</h4>
+                <ul>
+                  <li>반복 횟수에 비례하는 API 호출 비용</li>
+                  <li>순차 실행으로 지연시간 증가</li>
+                  <li>무한 루프 방지 위한 최대 반복 제한 필요</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Reflection Loop - Interactive Demo -->
+    <section class="slide" id="slide-3">
+      <div class="slide-content demo-slide">
+        <h2>리플렉션 루프 데모</h2>
+        <div class="demo-layout">
+          <div class="demo-main">
+            <div class="sample-prompts" id="reflection-samples">
+              <span class="sample-prompt" data-prompt="효과적인 리더십에 대한 에세이를 작성해주세요">리더십 에세이</span>
+              <span class="sample-prompt" data-prompt="Python으로 퀵소트를 구현하는 코드를 작성해주세요">퀵소트 코드</span>
+            </div>
+            <div class="chatbot-container" id="reflection-chatbot">
+              <div class="chat-area" id="reflection-chat-area"></div>
+              <div class="input-area">
+                <input type="text" id="reflection-input" placeholder="작업을 입력하세요 (예: 인공지능의 미래에 대한 에세이를 작성해주세요)" maxlength="500">
+                <button id="reflection-send" class="send-btn">실행</button>
+              </div>
+            </div>
+          </div>
+          <div class="demo-sidebar">
+            <div class="progress-panel" id="reflection-progress">
+              <div class="iteration-counter">
+                <span class="iteration-label">반복</span>
+                <span class="iteration-value" id="reflection-iteration">0</span>
+                <span class="iteration-max">/ 3</span>
+              </div>
+              <div class="token-counter">
+                <span class="token-label">총 토큰</span>
+                <span class="token-value" id="reflection-total-tokens">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: Reflection Loop - Results Viewer -->
+    <section class="slide" id="slide-4">
+      <div class="slide-content results-slide">
+        <h2>리플렉션 루프 결과 분석</h2>
+        <div class="results-container" id="reflection-results">
+          <div class="results-placeholder">데모를 먼저 실행해주세요</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: Orchestrator-Worker - Explanation -->
+    <section class="slide" id="slide-5">
+      <div class="slide-content explanation-slide">
+        <div class="slide-header">
+          <h2>오케스트레이터-워커 <span class="en">(Orchestrator-Worker)</span></h2>
+          <p class="slide-subtitle">작업 분해 및 병렬 실행 패턴</p>
+        </div>
+        <div class="two-column">
+          <div class="diagram-area" id="orchestrator-diagram">
+            <!-- SVG diagram will be loaded here or inline -->
+          </div>
+          <div class="description-area">
+            <ul class="pattern-points">
+              <li><span class="agent-badge purple">오케스트레이터</span>작업을 독립적 하위 작업으로 분해합니다</li>
+              <li><span class="agent-badge teal">워커</span>각자의 컨텍스트로 병렬 실행합니다</li>
+              <li><span class="agent-badge gold">합성기</span>결과를 통합하여 최종 응답을 생성합니다</li>
+            </ul>
+            <div class="use-cases">
+              <h4>사용 사례</h4>
+              <p>리서치, 복잡한 분석, 대규모 콘텐츠 생성</p>
+            </div>
+            <div class="pros-cons">
+              <div class="pros">
+                <h4>장점</h4>
+                <ul>
+                  <li>병렬 실행으로 처리 시간 단축</li>
+                  <li>복잡한 작업을 독립 하위작업으로 분해</li>
+                  <li>워커 수 확장 가능</li>
+                </ul>
+              </div>
+              <div class="cons">
+                <h4>단점</h4>
+                <ul>
+                  <li>작업 분해 품질에 전체 결과가 의존</li>
+                  <li>하위작업 간 의존성 처리 어려움</li>
+                  <li>합성 단계에서 일관성 유지 필요</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: Orchestrator-Worker - Interactive Demo -->
+    <section class="slide" id="slide-6">
+      <div class="slide-content demo-slide">
+        <h2>오케스트레이터-워커 데모</h2>
+        <div class="demo-layout orchestrator-layout">
+          <div class="sample-prompts" id="orchestrator-samples">
+            <span class="sample-prompt" data-prompt="2025년 AI 산업의 주요 트렌드를 분석해주세요">AI 트렌드 분석</span>
+            <span class="sample-prompt" data-prompt="신규 SaaS 제품의 출시 전략을 수립해주세요">SaaS 출시 전략</span>
+          </div>
+          <div class="input-area orchestrator-input">
+            <input type="text" id="orchestrator-input" placeholder="복잡한 작업을 입력하세요 (예: 2025년 AI 산업 트렌드를 분석해주세요)" maxlength="500">
+            <button id="orchestrator-send" class="send-btn">실행</button>
+          </div>
+          <div class="pipeline-container" id="orchestrator-pipeline">
+            <div class="pipeline-phase" id="orch-planning">
+              <div class="phase-label">Phase 1: 작업 분해</div>
+              <div class="agent-card orchestrator-card" id="orch-plan-card">
+                <div class="card-header"><span class="agent-badge purple">오케스트레이터</span><span class="token-badge"></span></div>
+                <div class="card-content"></div>
+              </div>
+            </div>
+            <div class="pipeline-phase" id="orch-workers">
+              <div class="phase-label">Phase 2: 병렬 실행</div>
+              <div class="workers-grid">
+                <div class="agent-card worker-card" id="worker-card-0">
+                  <div class="card-header"><span class="agent-badge teal">워커 1</span><span class="worker-status">대기중</span><span class="token-badge"></span></div>
+                  <div class="card-subtitle"></div>
+                  <div class="card-content"></div>
+                </div>
+                <div class="agent-card worker-card" id="worker-card-1">
+                  <div class="card-header"><span class="agent-badge teal">워커 2</span><span class="worker-status">대기중</span><span class="token-badge"></span></div>
+                  <div class="card-subtitle"></div>
+                  <div class="card-content"></div>
+                </div>
+                <div class="agent-card worker-card" id="worker-card-2">
+                  <div class="card-header"><span class="agent-badge teal">워커 3</span><span class="worker-status">대기중</span><span class="token-badge"></span></div>
+                  <div class="card-subtitle"></div>
+                  <div class="card-content"></div>
+                </div>
+              </div>
+            </div>
+            <div class="pipeline-phase" id="orch-synthesis">
+              <div class="phase-label">Phase 3: 결과 통합</div>
+              <div class="agent-card synthesizer-card" id="synth-card">
+                <div class="card-header"><span class="agent-badge gold">합성기</span><span class="token-badge"></span></div>
+                <div class="card-content"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: Orchestrator-Worker - Results Viewer -->
+    <section class="slide" id="slide-7">
+      <div class="slide-content results-slide">
+        <h2>오케스트레이터-워커 결과 분석</h2>
+        <div class="results-container" id="orchestrator-results">
+          <div class="results-placeholder">데모를 먼저 실행해주세요</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Navigation -->
+  <div class="slide-nav">
+    <button class="nav-arrow nav-prev" id="nav-prev">&larr;</button>
+    <div class="nav-dots" id="nav-dots"></div>
+    <button class="nav-arrow nav-next" id="nav-next">&rarr;</button>
+    <span class="slide-counter" id="slide-counter">1 / 7</span>
+  </div>
+
+  <!-- Error Modal -->
+  <div class="modal" id="error-modal" style="display:none">
+    <div class="modal-content">
+      <h3>API 키 필요</h3>
+      <p>OpenAI API 키가 설정되지 않았습니다. 서버의 <code>.env</code> 파일에 API 키를 입력해주세요.</p>
+      <button class="modal-close" id="modal-close">확인</button>
+    </div>
+  </div>
+
+  <!-- Keyboard shortcuts overlay -->
+  <div class="shortcuts-overlay" id="shortcuts-overlay" style="display:none">
+    <div class="shortcuts-content">
+      <h3>키보드 단축키</h3>
+      <ul>
+        <li><kbd>→</kbd> / <kbd>↓</kbd> / <kbd>Space</kbd> 다음 슬라이드</li>
+        <li><kbd>←</kbd> / <kbd>↑</kbd> 이전 슬라이드</li>
+        <li><kbd>1</kbd>-<kbd>7</kbd> 슬라이드로 이동</li>
+        <li><kbd>Home</kbd> 처음으로</li>
+        <li><kbd>End</kbd> 마지막으로</li>
+        <li><kbd>?</kbd> 이 도움말 토글</li>
+      </ul>
+      <button class="modal-close">닫기</button>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/results-viewer.js"></script>
+  <script src="js/reflection-ui.js"></script>
+  <script src="js/orchestrator-ui.js"></script>
+</body>
+</html>
