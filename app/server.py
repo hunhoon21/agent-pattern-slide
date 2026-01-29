@@ -72,5 +72,6 @@ async def orchestrator_endpoint(request: Request):
     )
 
 
-# IMPORTANT: Mount static files LAST so API routes take priority
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
+# Mount static files only in local development (Vercel serves them via CDN)
+if not os.getenv("VERCEL"):
+    app.mount("/", StaticFiles(directory="public", html=True), name="static")
