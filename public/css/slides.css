@@ -284,6 +284,25 @@ body {
   padding: 2.5rem 3rem;
   width: 100%;
   height: 100%;
+  overflow-y: auto;
+}
+
+.demo-slide::-webkit-scrollbar {
+  width: 8px;
+}
+
+.demo-slide::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.demo-slide::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.demo-slide::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .demo-slide h2 {
