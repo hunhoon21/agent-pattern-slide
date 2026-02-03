@@ -641,3 +641,521 @@ input[type="text"]::placeholder,
     flex-direction: row;
   }
 }
+
+/* ============================================================
+   GRAPH OF THOUGHTS STYLES
+   ============================================================ */
+
+/* Thought Graph Container */
+.thought-graph {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.thought-graph svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Thought Node */
+.thought-node {
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.thought-node circle {
+  fill: var(--bg-card);
+  stroke: var(--accent-blue);
+  stroke-width: 2;
+  transition: var(--transition-smooth);
+}
+
+.thought-node.score-high circle {
+  stroke: var(--accent-green);
+  fill: rgba(16, 185, 129, 0.1);
+}
+
+.thought-node.score-medium circle {
+  stroke: var(--accent-orange);
+  fill: rgba(249, 115, 22, 0.1);
+}
+
+.thought-node.score-low circle {
+  stroke: var(--text-secondary);
+  fill: rgba(107, 114, 128, 0.1);
+}
+
+.thought-node.selected circle {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px var(--accent-blue));
+}
+
+.thought-node text {
+  fill: var(--text-primary);
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* Thought Edge */
+.thought-edge {
+  stroke: var(--border-color);
+  stroke-width: 2;
+  fill: none;
+  transition: var(--transition-smooth);
+}
+
+.thought-edge.best-path {
+  stroke: var(--accent-green);
+  stroke-width: 3;
+}
+
+/* Thought Detail Panel */
+.thought-detail {
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.thought-detail-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.thought-detail-content {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   RICH FEEDBACK STYLES
+   ============================================================ */
+
+/* Code Editor */
+.code-editor-container {
+  display: flex;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.line-numbers {
+  background: var(--bg-secondary);
+  padding: 1rem 0.75rem;
+  text-align: right;
+  color: var(--text-secondary);
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  user-select: none;
+  border-right: 1px solid var(--border-color);
+}
+
+.code-editor {
+  flex: 1;
+  padding: 1rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  resize: none;
+  outline: none;
+  min-height: 200px;
+}
+
+.code-editor:focus {
+  background: rgba(59, 130, 246, 0.02);
+}
+
+/* Issue Cards */
+.issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.issue-card {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 0.75rem;
+  border-left: 3px solid var(--accent-orange);
+}
+
+.issue-card.error {
+  border-left-color: #ef4444;
+}
+
+.issue-card.warning {
+  border-left-color: var(--accent-orange);
+}
+
+.issue-card.info {
+  border-left-color: var(--accent-blue);
+}
+
+.issue-card.resolved {
+  border-left-color: var(--accent-green);
+  opacity: 0.7;
+}
+
+.issue-card .issue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.issue-card .issue-line {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.issue-card .issue-severity {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.issue-card .issue-severity.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.issue-card .issue-severity.warning {
+  background: rgba(249, 115, 22, 0.1);
+  color: var(--accent-orange);
+}
+
+.issue-card .issue-description {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+/* Diff View */
+.diff-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.diff-panel {
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.diff-panel-header {
+  background: var(--bg-secondary);
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.diff-panel-header.before {
+  color: #ef4444;
+}
+
+.diff-panel-header.after {
+  color: var(--accent-green);
+}
+
+.diff-panel-content {
+  padding: 1rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* Iteration Timeline */
+.iteration-timeline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.iteration-step {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.iteration-step-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.iteration-step-dot.active {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.iteration-step-dot.complete {
+  background: var(--accent-green);
+  color: white;
+}
+
+.iteration-connector {
+  width: 30px;
+  height: 2px;
+  background: var(--border-color);
+}
+
+.iteration-connector.complete {
+  background: var(--accent-green);
+}
+
+/* ============================================================
+   CODE REVIEW STYLES
+   ============================================================ */
+
+/* Review Cards Grid */
+.review-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.review-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  transition: var(--transition-smooth);
+}
+
+.review-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.review-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.review-card-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.review-card-title .icon {
+  font-size: 1.25rem;
+}
+
+.review-card.correctness .icon { color: var(--accent-blue); }
+.review-card.style .icon { color: var(--accent-purple); }
+.review-card.performance .icon { color: var(--accent-orange); }
+.review-card.security .icon { color: #ef4444; }
+
+/* Score Badge */
+.score-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.score-badge.score-high {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent-green);
+}
+
+.score-badge.score-medium {
+  background: rgba(249, 115, 22, 0.1);
+  color: var(--accent-orange);
+}
+
+.score-badge.score-low {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Review Issues List */
+.review-issues {
+  margin-top: 0.5rem;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.review-issue {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.review-issue:last-child {
+  border-bottom: none;
+}
+
+/* Summary Panel */
+.review-summary {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.review-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.review-summary-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.overall-score {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.score-breakdown {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.score-bar {
+  flex: 1;
+}
+
+.score-bar-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.score-bar-track {
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.score-bar-fill.correctness { background: var(--accent-blue); }
+.score-bar-fill.style { background: var(--accent-purple); }
+.score-bar-fill.performance { background: var(--accent-orange); }
+.score-bar-fill.security { background: #ef4444; }
+
+/* ============================================================
+   RESULTS PAGE STYLES
+   ============================================================ */
+
+/* Results Container */
+.results-slide {
+  padding: 2rem;
+}
+
+.results-placeholder {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.results-placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Results Tree (for GoT) */
+.results-tree {
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+}
+
+.tree-node {
+  padding: 0.5rem;
+  margin-left: 1.5rem;
+  border-left: 2px solid var(--border-color);
+}
+
+.tree-node.expanded > .tree-node-content {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.tree-node-content {
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.tree-node-content:hover {
+  background: var(--bg-secondary);
+}
+
+/* Token Usage Display */
+.token-usage-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.token-usage-item {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.token-usage-item .agent-name {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.token-usage-item .token-count {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}

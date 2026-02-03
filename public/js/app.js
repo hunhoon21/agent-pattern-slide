@@ -5,7 +5,7 @@
 
 // Global state
 let currentSlide = 0;
-const TOTAL_SLIDES = 7;
+const TOTAL_SLIDES = 16;
 
 // Chatbot initialization tracking
 const initialized = {};
@@ -218,10 +218,20 @@ function setupKeyboardHandlers() {
       case '5':
       case '6':
       case '7':
+      case '8':
+      case '9':
         if (!shouldIgnore) {
           e.preventDefault();
           const slideIndex = parseInt(e.key, 10) - 1;
           navigateTo(slideIndex);
+        }
+        break;
+
+      case '0':
+        // 0 key goes to slide 10
+        if (!shouldIgnore) {
+          e.preventDefault();
+          navigateTo(9);
         }
         break;
     }
@@ -321,6 +331,54 @@ function setupChatbotInitialization() {
       initialized.orchestrator = true;
       if (typeof initOrchestratorDemo === 'function') {
         initOrchestratorDemo();
+      }
+    }
+
+    // Initialize Graph of Thoughts on explanation slide (index 7) or demo slide (index 8)
+    if ((idx === 7 || idx === 8) && !initialized.got) {
+      initialized.got = true;
+      if (typeof initGotDemo === 'function') {
+        initGotDemo();
+      }
+    }
+
+    // Initialize Graph of Thoughts Results on results slide (index 9)
+    if (idx === 9 && !initialized.gotResults) {
+      initialized.gotResults = true;
+      if (typeof initGotResults === 'function') {
+        initGotResults();
+      }
+    }
+
+    // Initialize Rich Feedback on explanation slide (index 10) or demo slide (index 11)
+    if ((idx === 10 || idx === 11) && !initialized.richFeedback) {
+      initialized.richFeedback = true;
+      if (typeof initRichFeedbackDemo === 'function') {
+        initRichFeedbackDemo();
+      }
+    }
+
+    // Initialize Rich Feedback Results on results slide (index 12)
+    if (idx === 12 && !initialized.richFeedbackResults) {
+      initialized.richFeedbackResults = true;
+      if (typeof initRichFeedbackResults === 'function') {
+        initRichFeedbackResults();
+      }
+    }
+
+    // Initialize Code Review on explanation slide (index 13) or demo slide (index 14)
+    if ((idx === 13 || idx === 14) && !initialized.codeReview) {
+      initialized.codeReview = true;
+      if (typeof initCodeReviewDemo === 'function') {
+        initCodeReviewDemo();
+      }
+    }
+
+    // Initialize Code Review Results on results slide (index 15)
+    if (idx === 15 && !initialized.codeReviewResults) {
+      initialized.codeReviewResults = true;
+      if (typeof initCodeReviewResults === 'function') {
+        initCodeReviewResults();
       }
     }
   });

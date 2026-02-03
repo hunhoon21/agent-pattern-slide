@@ -28,7 +28,21 @@ function createChatbot(config) {
     orchestrator: '오케스트레이터',
     worker: '워커',
     synthesizer: '합성기',
-    system: '시스템'
+    system: '시스템',
+    thought_generator: 'Thought Generator',
+    evaluator: 'Evaluator',
+    analyzer: 'Analyzer',
+    fixer: 'Fixer',
+    validator: 'Validator',
+    correctness_reviewer: 'Correctness Reviewer',
+    style_reviewer: 'Style Reviewer',
+    performance_reviewer: 'Performance Reviewer',
+    security_reviewer: 'Security Reviewer',
+    summarizer: 'Summarizer',
+    correctness: 'Correctness',
+    style: 'Style',
+    performance: 'Performance',
+    security: 'Security'
   };
 
   // Agent color classes
@@ -39,7 +53,21 @@ function createChatbot(config) {
     system: 'final',
     orchestrator: 'final',  // purple
     worker: 'worker',
-    synthesizer: 'synthesizer'
+    synthesizer: 'synthesizer',
+    thought_generator: 'agent-blue',
+    evaluator: 'agent-orange',
+    analyzer: 'agent-orange',
+    fixer: 'agent-blue',
+    validator: 'agent-green',
+    correctness_reviewer: 'agent-teal',
+    style_reviewer: 'agent-teal',
+    performance_reviewer: 'agent-teal',
+    security_reviewer: 'agent-teal',
+    summarizer: 'agent-gold',
+    correctness: 'agent-blue',
+    style: 'agent-purple',
+    performance: 'agent-orange',
+    security: 'agent-red'
   };
 
   function formatTokens(n) {
@@ -116,6 +144,45 @@ function createChatbot(config) {
         activeCards[wsKey] = createStepCard('worker', 'worker');
       }
       return;
+    }
+    // Graph of Thoughts step types
+    else if (step.type === 'thought_node') {
+      // Handle thought node creation
+      key = `thought_generator-${step.iteration || 0}`;
+    }
+    else if (step.type === 'evaluation') {
+      // Handle evaluation result
+      key = `evaluator-${step.iteration || 0}`;
+    }
+    // Rich Feedback step types
+    else if (step.type === 'analysis') {
+      // Handle code analysis
+      key = `analyzer-${step.iteration || 0}`;
+    }
+    else if (step.type === 'fix_attempt') {
+      // Handle fix attempt
+      key = `fixer-${step.iteration || 0}`;
+    }
+    else if (step.type === 'validation') {
+      // Handle validation result
+      key = `validator-${step.iteration || 0}`;
+    }
+    // Code Review step types
+    else if (step.type === 'review_start') {
+      // Handle review start
+      key = 'system';
+    }
+    else if (step.type === 'review_category') {
+      // Handle review category
+      key = `${step.category || 'reviewer'}-${step.iteration || 0}`;
+    }
+    else if (step.type === 'review_complete') {
+      // Handle review complete
+      key = 'system';
+    }
+    else if (step.type === 'summary') {
+      // Handle summary
+      key = `summarizer-${step.iteration || 0}`;
     }
 
     if (key && activeCards[key]) {

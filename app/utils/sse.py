@@ -7,12 +7,15 @@ def sse_token(
     delta: str,
     iteration: int | None = None,
     worker_id: int | None = None,
+    category: str | None = None,
 ) -> str:
     event = {"type": "token", "agent": agent, "delta": delta}
     if iteration is not None:
         event["iteration"] = iteration
     if worker_id is not None:
         event["workerId"] = worker_id
+    if category is not None:
+        event["category"] = category
     return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
@@ -36,6 +39,7 @@ def make_step(
     iteration: int | None = None,
     worker_id: int | None = None,
     subtasks: list | None = None,
+    category: str | None = None,
 ) -> dict:
     step: dict = {
         "type": step_type,
@@ -50,6 +54,8 @@ def make_step(
         step["workerId"] = worker_id
     if subtasks is not None:
         step["subtasks"] = subtasks
+    if category is not None:
+        step["category"] = category
     return step
 
 
