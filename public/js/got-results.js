@@ -38,9 +38,15 @@ function initGotResults() {
     } else if (step.type === 'final') {
       synthesis = step.content;
       if (step.data?.thought_graph) {
-        // Use complete graph from final step
+        // Use complete graph from final step, normalizing field names
         thoughtNodes.length = 0;
-        step.data.thought_graph.forEach(t => thoughtNodes.push(t));
+        step.data.thought_graph.forEach(t => thoughtNodes.push({
+          id: t.id,
+          parentId: t.parent_id,
+          level: t.level || 0,
+          content: t.content || '',
+          score: t.score
+        }));
       }
     }
     if (step.tokenUsage) {
@@ -52,7 +58,13 @@ function initGotResults() {
   // Build tree structure for display
   const buildTree = (nodes, parentId = null, depth = 0) => {
     return nodes
-      .filter(n => n.parentId === parentId || (parentId === null && n.parent_id === undefined))
+      .filter(n => {
+        const nodeParentId = n.parentId;
+        if (parentId === null) {
+          return nodeParentId === null || nodeParentId === undefined;
+        }
+        return nodeParentId === parentId;
+      })
       .map(node => {
         const children = buildTree(nodes, node.id, depth + 1);
         const scoreColor = getScoreColor(node.score);
@@ -65,7 +77,7 @@ function initGotResults() {
               </div>
               <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(truncate(node.content || '', 200))}</p>
             </div>
-            ${children.length > 0 ? `<div class="tree-children">${children.join('')}</div>` : ''}
+            ${children ? `<div class="tree-children">${children}</div>` : ''}
           </div>
         `;
       }).join('');
