@@ -412,19 +412,19 @@ function init() {
   // Generate navigation dots
   generateNavDots();
 
-  // Parse URL hash and navigate to initial slide
+  // Setup event handlers BEFORE navigation so listeners are ready
+  setupKeyboardHandlers();
+  setupClickHandlers();
+  setupTouchHandlers();
+  setupChatbotInitialization();  // MUST be before navigateTo to catch slide-changed event
+  setupSamplePrompts();
+
+  // Now navigate - event will be caught by listeners
   const initialSlide = parseUrlHash();
   navigateTo(initialSlide);
 
   // Check API key status
   checkApiKey();
-
-  // Setup event handlers
-  setupKeyboardHandlers();
-  setupClickHandlers();
-  setupTouchHandlers();
-  setupChatbotInitialization();
-  setupSamplePrompts();
 }
 
 // Initialize on DOMContentLoaded
