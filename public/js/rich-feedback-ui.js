@@ -174,7 +174,7 @@ function initRichFeedbackDemo() {
       return;
     }
 
-    issuesPanel.innerHTML = issues.map((issue, idx) => `
+    issuesPanel.innerHTML = issues.map((issue) => `
       <div class="issue-card mb-3 p-3 rounded-lg border ${getIssueCardClass(issue)}">
         <div class="flex items-start justify-between mb-2">
           <div class="flex-1">
@@ -261,7 +261,101 @@ function initRichFeedbackDemo() {
   addCodeLineNumbers();
 
   // Create results viewer for slide 13
+  // @ts-ignore - createResultsViewer is defined in results-viewer.js
   const resultsViewer = createResultsViewer('rich-feedback-results', 'rich-feedback');
 
   return { resultsViewer };
+}
+
+/**
+ * Initialize Rich Feedback diagram on slide 11
+ */
+function initRichFeedbackDiagram() {
+  const diagramContainer = document.getElementById('rich-feedback-diagram');
+  if (!diagramContainer) return;
+
+  diagramContainer.innerHTML = `
+    <svg width="700" height="520" viewBox="0 0 700 520" xmlns="http://www.w3.org/2000/svg">
+      <!-- User Input -->
+      <rect x="250" y="20" width="200" height="60" rx="8" fill="#ffffff" stroke="#1a1a2a" stroke-width="2"/>
+      <text x="350" y="45" text-anchor="middle" font-size="14" fill="#1a1a2a" font-weight="600">사용자 입력</text>
+      <text x="350" y="65" text-anchor="middle" font-size="12" fill="#666" font-style="italic">User Input</text>
+
+      <!-- Arrow: Input → Analyzer -->
+      <path d="M 350 80 L 350 130" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+      <!-- Analyzer Node -->
+      <rect x="250" y="130" width="200" height="70" rx="8" fill="#3b82f6" fill-opacity="0.1" stroke="#3b82f6" stroke-width="2"/>
+      <text x="350" y="155" text-anchor="middle" font-size="14" fill="#1a1a2a" font-weight="600">분석기 (Analyzer)</text>
+      <text x="350" y="173" text-anchor="middle" font-size="11" fill="#666">구조화된 피드백 생성</text>
+      <text x="350" y="188" text-anchor="middle" font-size="11" fill="#666" font-style="italic">Structured Feedback</text>
+
+      <!-- Arrow: Analyzer → Fixer -->
+      <path d="M 350 200 L 350 240" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+      <!-- Fixer Node -->
+      <rect x="250" y="240" width="200" height="70" rx="8" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="2"/>
+      <text x="350" y="265" text-anchor="middle" font-size="14" fill="#1a1a2a" font-weight="600">수정기 (Fixer)</text>
+      <text x="350" y="283" text-anchor="middle" font-size="11" fill="#666">피드백 기반 수정</text>
+      <text x="350" y="298" text-anchor="middle" font-size="11" fill="#666" font-style="italic">Apply Fixes</text>
+
+      <!-- Arrow: Fixer → Validator -->
+      <path d="M 350 310 L 350 350" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+      <!-- Validator Node -->
+      <rect x="250" y="350" width="200" height="70" rx="8" fill="#f97316" fill-opacity="0.1" stroke="#f97316" stroke-width="2"/>
+      <text x="350" y="375" text-anchor="middle" font-size="14" fill="#1a1a2a" font-weight="600">검증기 (Validator)</text>
+      <text x="350" y="393" text-anchor="middle" font-size="11" fill="#666">수정 결과 검증</text>
+      <text x="350" y="408" text-anchor="middle" font-size="11" fill="#666" font-style="italic">Check if Fixed</text>
+
+      <!-- Loop Arrow: Validator → Analyzer (curved back) -->
+      <path d="M 250 380 Q 100 300 100 170 Q 100 150 250 160" stroke="#f97316" stroke-width="2.5" fill="none" marker-end="url(#arrowhead-orange)" stroke-dasharray="5,5"/>
+      <text x="80" y="270" text-anchor="middle" font-size="12" fill="#f97316" font-weight="600">재분석</text>
+      <text x="80" y="285" text-anchor="middle" font-size="10" fill="#f97316" font-style="italic">if not passed</text>
+
+      <!-- Arrow: Validator → Output (when passed) -->
+      <path d="M 350 420 L 350 450" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead-green)"/>
+      <text x="380" y="440" font-size="11" fill="#10b981" font-weight="600">통과 시</text>
+
+      <!-- Output Node -->
+      <rect x="250" y="450" width="200" height="60" rx="8" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="2"/>
+      <text x="350" y="475" text-anchor="middle" font-size="14" fill="#1a1a2a" font-weight="600">최종 출력</text>
+      <text x="350" y="495" text-anchor="middle" font-size="12" fill="#666" font-style="italic">Validated Output</text>
+
+      <!-- Iteration Counter (right side) -->
+      <rect x="520" y="240" width="140" height="90" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+      <text x="590" y="265" text-anchor="middle" font-size="13" fill="#1a1a2a" font-weight="600">반복 루프</text>
+      <text x="590" y="283" text-anchor="middle" font-size="11" fill="#666">Iteration Loop</text>
+      <text x="590" y="305" text-anchor="middle" font-size="11" fill="#666">최대 3회 재시도</text>
+      <text x="590" y="320" text-anchor="middle" font-size="10" fill="#666" font-style="italic">Max 3 iterations</text>
+
+      <!-- Arrow definitions -->
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#1a1a2a"/>
+        </marker>
+        <marker id="arrowhead-orange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#f97316"/>
+        </marker>
+        <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#10b981"/>
+        </marker>
+      </defs>
+
+      <!-- Legend (bottom right) -->
+      <g transform="translate(500, 360)">
+        <text x="0" y="0" font-size="12" fill="#1a1a2a" font-weight="600">패턴 특징</text>
+        <text x="0" y="18" font-size="10" fill="#666">✓ 구조화된 피드백</text>
+        <text x="0" y="33" font-size="10" fill="#666">✓ 단계별 검증</text>
+        <text x="0" y="48" font-size="10" fill="#666">✓ 반복적 개선</text>
+      </g>
+    </svg>
+  `;
+}
+
+// Initialize diagram - call immediately if DOM already loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initRichFeedbackDiagram);
+} else {
+  initRichFeedbackDiagram();
 }

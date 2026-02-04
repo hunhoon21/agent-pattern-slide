@@ -121,6 +121,8 @@ function initGotDemo() {
   }
 
   function addThoughtNode(node) {
+    if (!node || !node.id) return; // Guard against undefined/invalid nodes
+
     const existingIndex = nodes.findIndex(n => n.id === node.id);
     if (existingIndex >= 0) {
       nodes[existingIndex] = node;
@@ -143,7 +145,12 @@ function initGotDemo() {
   }
 
   function highlightBestPath(path) {
-    nodes.forEach(n => n.bestPath = path.includes(n.id));
+    if (!Array.isArray(path)) return;
+    nodes.forEach(n => {
+      if (n && n.id) {
+        n.bestPath = path.includes(n.id);
+      }
+    });
     renderGraph();
   }
 
@@ -175,15 +182,15 @@ function initGotDemo() {
 
     // Draw edges
     edges.forEach(edge => {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
+      const fromNode = nodes.find(n => n && n.id === edge.from);
+      const toNode = nodes.find(n => n && n.id === edge.to);
       if (!fromNode || !toNode) return;
 
       const fromPos = positions[edge.from];
       const toPos = positions[edge.to];
       if (!fromPos || !toPos) return;
 
-      const isBestPath = fromNode.bestPath && toNode.bestPath;
+      const isBestPath = (fromNode.bestPath || false) && (toNode.bestPath || false);
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', fromPos.x);
       line.setAttribute('y1', fromPos.y);
@@ -249,7 +256,7 @@ function initGotDemo() {
     const levels = {};
 
     // Find root nodes (no parents)
-    const roots = nodes.filter(n => !n.parentId);
+    const roots = nodes.filter(n => n && n.id && !n.parentId);
     if (roots.length === 0 && nodes.length > 0) {
       roots.push(nodes[0]);
     }
@@ -260,14 +267,18 @@ function initGotDemo() {
 
     while (queue.length > 0) {
       const { node, level } = queue.shift();
-      if (visited.has(node.id)) continue;
+      if (!node || !node.id || visited.has(node.id)) continue;
       visited.add(node.id);
 
       levels[node.id] = level;
 
       // Find children
       const children = edges.filter(e => e.from === node.id).map(e => nodes.find(n => n.id === e.to)).filter(Boolean);
-      children.forEach(child => queue.push({ node: child, level: level + 1 }));
+      children.forEach(child => {
+        if (child && child.id) {
+          queue.push({ node: child, level: level + 1 });
+        }
+      });
     }
 
     // Calculate positions
@@ -350,4 +361,102 @@ function initGotDemo() {
   const resultsViewer = createResultsViewer('got-results', 'got');
 
   return { resultsViewer };
+}
+
+/**
+ * Initialize GoT explanation diagram on slide 8
+ */
+function initGotDiagram() {
+  const diagramContainer = document.getElementById('got-diagram');
+  if (!diagramContainer) return;
+
+  diagramContainer.innerHTML = `
+    <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%; max-height: 500px;">
+      <!-- Definitions for gradients and markers -->
+      <defs>
+        <marker id="arrowhead-got-diagram" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#1a1a2a" />
+        </marker>
+        <linearGradient id="purple-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="teal-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#5eead4;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+
+      <!-- Initial thought node -->
+      <rect x="320" y="30" width="160" height="60" rx="8" fill="#ffffff" stroke="#1a1a2a" stroke-width="2"/>
+      <text x="400" y="55" text-anchor="middle" font-size="14" font-weight="600" fill="#1a1a2a">초기 사고 <tspan class="en" font-size="12">(Initial)</tspan></text>
+      <text x="400" y="75" text-anchor="middle" font-size="12" fill="#666">문제 입력</text>
+
+      <!-- Branch arrows to 3 paths -->
+      <line x1="350" y1="90" x2="150" y2="150" stroke="#1a1a2a" stroke-width="2" marker-end="url(#arrowhead-got-diagram)"/>
+      <line x1="400" y1="90" x2="400" y2="150" stroke="#1a1a2a" stroke-width="2" marker-end="url(#arrowhead-got-diagram)"/>
+      <line x1="450" y1="90" x2="650" y2="150" stroke="#1a1a2a" stroke-width="2" marker-end="url(#arrowhead-got-diagram)"/>
+
+      <!-- Thought Path 1 (Purple) -->
+      <rect x="70" y="160" width="160" height="60" rx="8" fill="url(#purple-gradient)" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="150" y="185" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">사고 경로 1</text>
+      <text x="150" y="205" text-anchor="middle" font-size="11" fill="#ffffff">접근법 A</text>
+
+      <!-- Evaluation 1 -->
+      <rect x="90" y="245" width="120" height="40" rx="6" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="150" y="268" text-anchor="middle" font-size="12" font-weight="500" fill="#8b5cf6">평가: 7.5</text>
+
+      <!-- Thought Path 2 (Teal) -->
+      <rect x="320" y="160" width="160" height="60" rx="8" fill="url(#teal-gradient)" stroke="#14b8a6" stroke-width="2"/>
+      <text x="400" y="185" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">사고 경로 2</text>
+      <text x="400" y="205" text-anchor="middle" font-size="11" fill="#ffffff">접근법 B</text>
+
+      <!-- Evaluation 2 (Best) -->
+      <rect x="340" y="245" width="120" height="40" rx="6" fill="#ffffff" stroke="#14b8a6" stroke-width="3"/>
+      <text x="400" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#14b8a6">평가: 9.2 ⭐</text>
+
+      <!-- Thought Path 3 (Gold) -->
+      <rect x="570" y="160" width="160" height="60" rx="8" fill="url(#gold-gradient)" stroke="#d97706" stroke-width="2"/>
+      <text x="650" y="185" text-anchor="middle" font-size="13" font-weight="600" fill="#ffffff">사고 경로 3</text>
+      <text x="650" y="205" text-anchor="middle" font-size="11" fill="#ffffff">접근법 C</text>
+
+      <!-- Evaluation 3 -->
+      <rect x="590" y="245" width="120" height="40" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+      <text x="650" y="268" text-anchor="middle" font-size="12" font-weight="500" fill="#d97706">평가: 6.8</text>
+
+      <!-- Merge arrows to synthesis -->
+      <line x1="150" y1="285" x2="350" y2="360" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead-got-diagram)" opacity="0.5"/>
+      <line x1="400" y1="285" x2="400" y2="360" stroke="#14b8a6" stroke-width="3" marker-end="url(#arrowhead-got-diagram)"/>
+      <line x1="650" y1="285" x2="450" y2="360" stroke="#d97706" stroke-width="2" marker-end="url(#arrowhead-got-diagram)" opacity="0.5"/>
+
+      <!-- Synthesis node -->
+      <rect x="320" y="370" width="160" height="60" rx="8" fill="#ffffff" stroke="#14b8a6" stroke-width="3"/>
+      <text x="400" y="395" text-anchor="middle" font-size="14" font-weight="600" fill="#1a1a2a">통합 <tspan class="en" font-size="12">(Synthesis)</tspan></text>
+      <text x="400" y="415" text-anchor="middle" font-size="12" fill="#666">최적 경로 선택</text>
+
+      <!-- Arrow to final output -->
+      <line x1="400" y1="430" x2="400" y2="480" stroke="#1a1a2a" stroke-width="2" marker-end="url(#arrowhead-got-diagram)"/>
+
+      <!-- Final output node -->
+      <rect x="320" y="490" width="160" height="60" rx="8" fill="#1a1a2a" stroke="#14b8a6" stroke-width="3"/>
+      <text x="400" y="515" text-anchor="middle" font-size="14" font-weight="600" fill="#ffffff">최종 출력 <tspan class="en" font-size="12">(Final)</tspan></text>
+      <text x="400" y="535" text-anchor="middle" font-size="12" fill="#14b8a6">검증된 답변</text>
+
+      <!-- Annotations -->
+      <text x="50" y="130" font-size="11" fill="#666" font-style="italic">병렬 탐색</text>
+      <text x="710" y="240" font-size="11" fill="#666" font-style="italic">점수 평가</text>
+      <text x="50" y="330" font-size="11" fill="#666" font-style="italic">수렴</text>
+    </svg>
+  `;
+}
+
+// Initialize diagram - call immediately if DOM already loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGotDiagram);
+} else {
+  initGotDiagram();
 }

@@ -328,3 +328,89 @@ function initCodeReviewDemo() {
 
   return { resultsViewer };
 }
+
+/**
+ * Initialize Code Review pattern diagram (slide 14)
+ */
+function initCodeReviewDiagram() {
+  const diagramContainer = document.getElementById('code-review-diagram');
+  if (!diagramContainer) return;
+
+  diagramContainer.innerHTML = `
+    <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; max-width: 800px; margin: 0 auto; display: block;">
+      <defs>
+        <marker id="arrowhead-code-review" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#1a1a2a" />
+        </marker>
+      </defs>
+
+      <!-- Code Input (Top) -->
+      <rect x="300" y="20" width="200" height="60" rx="8" fill="#ffffff" stroke="#1a1a2a" stroke-width="2"/>
+      <text x="400" y="45" text-anchor="middle" font-size="16" font-weight="600" fill="#1a1a2a">코드 입력</text>
+      <text x="400" y="65" text-anchor="middle" font-size="13" fill="#6b7280">Code Input</text>
+
+      <!-- Fan-out arrows to 4 reviewers -->
+      <path d="M 400 80 L 150 180" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+      <path d="M 400 80 L 300 180" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+      <path d="M 400 80 L 500 180" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+      <path d="M 400 80 L 650 180" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+
+      <!-- Parallel Reviewers (4 nodes at same vertical level) -->
+      <!-- Security Reviewer (Red) -->
+      <rect x="50" y="180" width="200" height="70" rx="8" fill="#ffffff" stroke="#ef4444" stroke-width="3"/>
+      <text x="150" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a2a">보안 리뷰어</text>
+      <text x="150" y="230" text-anchor="middle" font-size="12" fill="#6b7280">Security Reviewer</text>
+
+      <!-- Performance Reviewer (Blue) -->
+      <rect x="200" y="180" width="200" height="70" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="3"/>
+      <text x="300" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a2a">성능 리뷰어</text>
+      <text x="300" y="230" text-anchor="middle" font-size="12" fill="#6b7280">Performance</text>
+
+      <!-- Style Reviewer (Purple) -->
+      <rect x="400" y="180" width="200" height="70" rx="8" fill="#ffffff" stroke="#8b5cf6" stroke-width="3"/>
+      <text x="500" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a2a">스타일 리뷰어</text>
+      <text x="500" y="230" text-anchor="middle" font-size="12" fill="#6b7280">Style Reviewer</text>
+
+      <!-- Logic Reviewer (Green) -->
+      <rect x="550" y="180" width="200" height="70" rx="8" fill="#ffffff" stroke="#10b981" stroke-width="3"/>
+      <text x="650" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a2a">로직 리뷰어</text>
+      <text x="650" y="230" text-anchor="middle" font-size="12" fill="#6b7280">Logic Reviewer</text>
+
+      <!-- Feedback labels -->
+      <text x="150" y="270" text-anchor="middle" font-size="11" fill="#6b7280" font-style="italic">보안 피드백</text>
+      <text x="300" y="270" text-anchor="middle" font-size="11" fill="#6b7280" font-style="italic">성능 피드백</text>
+      <text x="500" y="270" text-anchor="middle" font-size="11" fill="#6b7280" font-style="italic">스타일 피드백</text>
+      <text x="650" y="270" text-anchor="middle" font-size="11" fill="#6b7280" font-style="italic">로직 피드백</text>
+
+      <!-- Convergence arrows to Summarizer -->
+      <path d="M 150 280 L 350 380" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+      <path d="M 300 280 L 370 380" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+      <path d="M 500 280 L 430 380" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+      <path d="M 650 280 L 450 380" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+
+      <!-- Summarizer (Gold) -->
+      <rect x="300" y="380" width="200" height="70" rx="8" fill="#ffffff" stroke="#d97706" stroke-width="3"/>
+      <text x="400" y="410" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a2a">종합 분석기</text>
+      <text x="400" y="430" text-anchor="middle" font-size="12" fill="#6b7280">Summarizer</text>
+
+      <!-- Arrow to Final Output -->
+      <path d="M 400 450 L 400 510" stroke="#1a1a2a" stroke-width="2" fill="none" marker-end="url(#arrowhead-code-review)"/>
+
+      <!-- Final Summary Output (Bottom) -->
+      <rect x="300" y="510" width="200" height="60" rx="8" fill="#ffffff" stroke="#1a1a2a" stroke-width="2"/>
+      <text x="400" y="535" text-anchor="middle" font-size="16" font-weight="600" fill="#1a1a2a">종합 리뷰 결과</text>
+      <text x="400" y="555" text-anchor="middle" font-size="13" fill="#6b7280">Final Summary</text>
+
+      <!-- Parallel execution indicator -->
+      <rect x="20" y="195" width="10" height="40" rx="2" fill="#f59e0b" opacity="0.3"/>
+      <text x="12" y="220" text-anchor="end" font-size="11" font-weight="600" fill="#f59e0b" transform="rotate(-90, 12, 220)">병렬 처리</text>
+    </svg>
+  `;
+}
+
+// Initialize diagram - call immediately if DOM already loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCodeReviewDiagram);
+} else {
+  initCodeReviewDiagram();
+}
