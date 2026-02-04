@@ -47,6 +47,7 @@ function initRichFeedbackDemo() {
   let allSteps = [];
   let currentIteration = 0;
   let issues = [];
+  let totalTokens = 0;
 
   // Pre-populate with first sample
   if (SAMPLE_CODES.length > 0) {
@@ -61,10 +62,13 @@ function initRichFeedbackDemo() {
     issues = [];
     currentIteration = 0;
     allSteps = [];
-    issuesPanel.innerHTML = '<p class="text-gray-500">분석 중...</p>';
+    totalTokens = 0;
+    issuesPanel.innerHTML = '<div id="rich-feedback-status" class="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-300"></div>' +
+                            '<div id="rich-feedback-issues-list"></div>';
     iterationDisplay.textContent = '0/3';
     codeInput.disabled = true;
     sendBtn.disabled = true;
+    updateStatus('준비 중...', 'blue');
 
     abortController = new AbortController();
 
@@ -98,6 +102,7 @@ function initRichFeedbackDemo() {
             try {
               const parsed = JSON.parse(data);
               if (parsed.type === 'step') handleStep(parsed.step);
+              else if (parsed.type === 'token') handleToken(parsed);
               else if (parsed.type === 'error') throw new Error(parsed.message);
             } catch (e) {
               if (e.message && !e.message.startsWith('Unexpected')) throw e;
@@ -123,58 +128,147 @@ function initRichFeedbackDemo() {
     }
   }
 
+  function handleToken(tokenData) {
+    // Show real-time streaming status
+    const agent = tokenData.agent;
+    const iteration = tokenData.iteration || currentIteration;
+
+    let statusMessage = '';
+    let color = 'blue';
+
+    if (agent === 'analyzer') {
+      statusMessage = `분석기: 코드 분석 중... (${iteration}회차)`;
+      color = 'blue';
+    } else if (agent === 'fixer') {
+      statusMessage = `수정기: 이슈 수정 중... (${iteration}회차)`;
+      color = 'green';
+    } else if (agent === 'validator') {
+      statusMessage = `검증기: 수정 검증 중... (${iteration}회차)`;
+      color = 'orange';
+    }
+
+    if (statusMessage) {
+      updateStatus(statusMessage, color);
+    }
+  }
+
   function handleStep(step) {
     allSteps.push(step);
+
+    // Accumulate token usage
+    if (step.tokenUsage && step.tokenUsage.total_tokens) {
+      totalTokens += step.tokenUsage.total_tokens;
+    }
 
     if (step.type === 'analysis') {
       currentIteration = step.iteration || 1;
       iterationDisplay.textContent = `${currentIteration}/3`;
 
-      if (step.issues) {
-        issues = step.issues;
-        renderIssues();
+      // Update status
+      updateStatus(`분석기: 코드 분석 완료 (${currentIteration}회차) [${totalTokens.toLocaleString()} 토큰]`, 'blue');
+
+      // Parse issues from content
+      try {
+        const parsed = JSON.parse(step.content);
+        if (parsed.issues && Array.isArray(parsed.issues)) {
+          issues = parsed.issues.map((issue, idx) => ({
+            id: idx,
+            severity: issue.severity || 'info',
+            title: issue.title || issue.type || '이슈',
+            description: issue.description || issue.message || '',
+            line: issue.line,
+            status: 'pending'
+          }));
+          renderIssues();
+        } else if (parsed.issues && parsed.issues.length === 0) {
+          // No issues found
+          const issuesListEl = document.getElementById('rich-feedback-issues-list');
+          if (issuesListEl) {
+            issuesListEl.innerHTML = '<p class="text-green-600 font-semibold">✓ 이슈가 발견되지 않았습니다</p>';
+          }
+        }
+      } catch (e) {
+        // If parsing fails, try to extract issues from text or show raw content
+        console.warn('Failed to parse analysis JSON:', e);
+        const issuesListEl = document.getElementById('rich-feedback-issues-list');
+        if (issuesListEl) {
+          issuesListEl.innerHTML = `<div class="p-3 bg-gray-50 rounded border border-gray-300">
+            <p class="text-sm font-semibold mb-2">분석 결과 (원본):</p>
+            <pre class="text-xs overflow-auto">${escapeHtml(step.content)}</pre>
+          </div>`;
+        }
       }
     } else if (step.type === 'fix_attempt') {
-      // Update code display
-      if (step.fixedCode) {
-        codeInput.value = step.fixedCode;
+      updateStatus(`수정기: 이슈 수정 완료 [${totalTokens.toLocaleString()} 토큰]`, 'green');
+
+      // Update code display with fixed code
+      if (step.content) {
+        codeInput.value = step.content;
         addCodeLineNumbers();
       }
 
-      // Mark issue as fixed
-      if (step.issueId !== undefined) {
-        const issue = issues.find(i => i.id === step.issueId);
-        if (issue) {
-          issue.status = 'fixing';
-          renderIssues();
-        }
-      }
+      // Mark all issues as fixing
+      issues.forEach(issue => { issue.status = 'fixing'; });
+      renderIssues();
     } else if (step.type === 'validation') {
-      // Update issue status based on validation
-      if (step.issueId !== undefined) {
-        const issue = issues.find(i => i.id === step.issueId);
-        if (issue) {
-          issue.status = step.passed ? 'fixed' : 'failed';
-          issue.validationMessage = step.message;
-          renderIssues();
+      updateStatus(`검증기: 수정 검증 중... [${totalTokens.toLocaleString()} 토큰]`, 'orange');
+
+      // Parse validation result
+      try {
+        const parsed = JSON.parse(step.content);
+        if (parsed.all_fixed === true || parsed.verdict === 'pass') {
+          issues.forEach(issue => { issue.status = 'fixed'; });
+          updateStatus(`검증 통과: 모든 이슈 수정됨 [${totalTokens.toLocaleString()} 토큰]`, 'green');
+        } else {
+          updateStatus(`검증 실패: 일부 이슈 미수정 [${totalTokens.toLocaleString()} 토큰]`, 'orange');
+        }
+      } catch (e) {
+        // Text validation
+        if (step.content.toLowerCase().includes('pass') || step.content.includes('all_fixed')) {
+          issues.forEach(issue => { issue.status = 'fixed'; });
+          updateStatus(`검증 통과 (텍스트 파싱) [${totalTokens.toLocaleString()} 토큰]`, 'green');
         }
       }
+      renderIssues();
     } else if (step.type === 'final') {
-      // Show final result
-      if (step.fixedCode) {
-        codeInput.value = step.fixedCode;
+      updateStatus(`완료: 최종 코드 출력 [총 ${totalTokens.toLocaleString()} 토큰 사용]`, 'green');
+
+      // Show final code
+      if (step.content) {
+        codeInput.value = step.content;
         addCodeLineNumbers();
       }
     }
   }
 
+  function updateStatus(message, color = 'blue') {
+    const statusEl = document.getElementById('rich-feedback-status');
+    if (!statusEl) return;
+
+    const colorClasses = {
+      blue: 'bg-blue-50 border-blue-300 text-blue-800',
+      green: 'bg-green-50 border-green-300 text-green-800',
+      orange: 'bg-orange-50 border-orange-300 text-orange-800',
+      red: 'bg-red-50 border-red-300 text-red-800'
+    };
+
+    statusEl.className = `mb-4 p-3 rounded-lg border ${colorClasses[color] || colorClasses.blue}`;
+    statusEl.innerHTML = `<div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+      <span class="font-semibold text-sm">${escapeHtml(message)}</span>
+    </div>`;
+  }
+
   function renderIssues() {
+    const issuesListEl = document.getElementById('rich-feedback-issues-list');
+    if (!issuesListEl) return;
+
     if (issues.length === 0) {
-      issuesPanel.innerHTML = '<p class="text-gray-500">이슈가 발견되지 않았습니다</p>';
+      issuesListEl.innerHTML = '<p class="text-gray-500">이슈가 발견되지 않았습니다</p>';
       return;
     }
 
-    issuesPanel.innerHTML = issues.map((issue) => `
+    issuesListEl.innerHTML = issues.map((issue) => `
       <div class="issue-card mb-3 p-3 rounded-lg border ${getIssueCardClass(issue)}">
         <div class="flex items-start justify-between mb-2">
           <div class="flex-1">
@@ -182,11 +276,11 @@ function initRichFeedbackDemo() {
               <span class="issue-severity ${getSeverityClass(issue.severity)}">${getSeverityLabel(issue.severity)}</span>
               <span class="issue-status ${getStatusClass(issue.status)}">${getStatusLabel(issue.status)}</span>
             </div>
-            <h4 class="font-semibold text-sm">${escapeHtml(issue.title || issue.message)}</h4>
+            <h4 class="font-semibold text-sm">${escapeHtml(issue.title || issue.message || 'Unknown issue')}</h4>
           </div>
         </div>
         ${issue.line ? `<p class="text-xs text-gray-600 mb-1">Line ${issue.line}</p>` : ''}
-        <p class="text-sm text-gray-700">${escapeHtml(issue.description || issue.message)}</p>
+        <p class="text-sm text-gray-700">${escapeHtml(issue.description || issue.message || '')}</p>
         ${issue.validationMessage ? `<p class="text-xs mt-2 text-gray-600">${escapeHtml(issue.validationMessage)}</p>` : ''}
       </div>
     `).join('');

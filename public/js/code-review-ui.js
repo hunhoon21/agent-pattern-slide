@@ -141,31 +141,133 @@ function initCodeReviewDemo() {
     }
   }
 
+  function parseScore(content) {
+    if (!content) return null;
+
+    // Try JSON parse first
+    try {
+      const json = JSON.parse(content);
+      if (json.score !== undefined) return json.score;
+      if (json.rating !== undefined) return json.rating;
+    } catch {}
+
+    // Try regex patterns
+    const patterns = [
+      /score[:\s]+(\d+)/i,
+      /(\d+)\s*\/\s*10/,
+      /rating[:\s]+(\d+)/i,
+      /점수[:\s]*(\d+)/,
+      /평가[:\s]*(\d+)/
+    ];
+
+    for (const pattern of patterns) {
+      const match = content.match(pattern);
+      if (match) {
+        const score = parseInt(match[1]);
+        if (score >= 0 && score <= 10) return score;
+      }
+    }
+
+    return null;
+  }
+
+  function parseReviewContent(content) {
+    if (!content) return { issues: [], comments: [] };
+
+    const result = { issues: [], comments: [] };
+
+    // Try JSON parse first
+    try {
+      const json = JSON.parse(content);
+      if (json.issues) {
+        const issues = Array.isArray(json.issues) ? json.issues : [json.issues];
+        result.issues = issues.map(issue => typeof issue === 'object' ? (issue.description || JSON.stringify(issue)) : String(issue));
+      }
+      if (json.comments) {
+        const comments = Array.isArray(json.comments) ? json.comments : [json.comments];
+        result.comments = comments.map(comment => typeof comment === 'object' ? (comment.description || comment.text || JSON.stringify(comment)) : String(comment));
+      }
+      return result;
+    } catch {}
+
+    // Parse plain text - split by lines
+    const lines = content.split('\n').map(l => l.trim()).filter(l => l);
+
+    // Look for issue markers
+    for (const line of lines) {
+      if (line.match(/^[-•*]\s+/) || line.match(/issue|problem|warning|error/i)) {
+        result.issues.push(line.replace(/^[-•*]\s+/, ''));
+      } else if (line.match(/comment|note|suggestion|개선/i)) {
+        result.comments.push(line.replace(/^[-•*]\s+/, ''));
+      } else if (line.length > 10) {
+        // Default to comments for substantial text
+        result.comments.push(line);
+      }
+    }
+
+    // If no structured content, add the whole text as a comment
+    if (result.issues.length === 0 && result.comments.length === 0 && content.length > 0) {
+      result.comments.push(content);
+    }
+
+    return result;
+  }
+
   function handleStep(step) {
     allSteps.push(step);
+
+    // Update token counter if present
+    if (step.tokenUsage) {
+      updateTokenCounter(step.tokenUsage);
+    }
 
     if (step.type === 'review_start') {
       // Mark category as reviewing
       if (step.category) {
         updateCardStatus(step.category, 'reviewing');
+        const body = document.getElementById(`review-body-${step.category}`);
+        if (body) {
+          body.innerHTML = '<p class="text-gray-500 text-sm">분석 중...</p>';
+        }
       }
     } else if (step.type === 'review_category') {
-      // Store review results
+      // Category is being analyzed - show progress
       if (step.category) {
+        updateCardStatus(step.category, 'reviewing');
+        const body = document.getElementById(`review-body-${step.category}`);
+        if (body) {
+          body.innerHTML = '<p class="text-blue-500 text-sm font-semibold animate-pulse">분석 중...</p>';
+        }
+      }
+    } else if (step.type === 'review_complete') {
+      // Store review results
+      if (step.category && step.content) {
+        const score = parseScore(step.content);
+        const parsed = parseReviewContent(step.content);
+
         reviews[step.category] = {
-          score: step.score,
-          issues: step.issues || [],
-          comments: step.comments || []
+          score: score,
+          issues: parsed.issues,
+          comments: parsed.comments,
+          rawContent: step.content
         };
+
         updateReviewCard(step.category, reviews[step.category]);
         updateCardStatus(step.category, 'complete');
       }
-    } else if (step.type === 'summary') {
+    } else if (step.type === 'summary' || step.type === 'final') {
       // Show overall summary
-      renderSummary(step);
-    } else if (step.type === 'final') {
-      // All reviews complete
+      const overallScore = parseScore(step.content);
+      renderSummary(step, overallScore);
     }
+  }
+
+  function updateTokenCounter(tokenUsage) {
+    const counterEl = document.getElementById('code-review-token-counter');
+    if (!counterEl) return;
+
+    const total = (tokenUsage.input || 0) + (tokenUsage.output || 0);
+    counterEl.textContent = `토큰: ${total.toLocaleString()}`;
   }
 
   function initializeReviewCards() {
@@ -203,10 +305,15 @@ function initCodeReviewDemo() {
 
     statusEl.className = 'review-status';
     if (status === 'reviewing') {
-      statusEl.textContent = '분석중';
+      statusEl.textContent = '분석 중...';
       statusEl.classList.add('status-reviewing');
     } else if (status === 'complete') {
-      statusEl.textContent = '완료';
+      const review = reviews[category];
+      if (review && review.score !== null && review.score !== undefined) {
+        statusEl.textContent = `완료 (${review.score}/10)`;
+      } else {
+        statusEl.textContent = '완료 ✓';
+      }
       statusEl.classList.add('status-complete');
     } else {
       statusEl.textContent = '대기중';
@@ -218,8 +325,15 @@ function initCodeReviewDemo() {
     const body = document.getElementById(`review-body-${category}`);
     if (!body) return;
 
-    const scoreColor = getScoreColor(review.score);
-    const scoreBadge = `<div class="score-badge" style="background: ${scoreColor};">${review.score}/10</div>`;
+    // Handle score display
+    let scoreBadge = '';
+    if (review.score !== null && review.score !== undefined) {
+      const scoreColor = getScoreColor(review.score);
+      scoreBadge = `<div class="score-badge" style="background: ${scoreColor};">${review.score}/10</div>`;
+    } else {
+      // No score found - show checkmark
+      scoreBadge = `<div class="score-badge" style="background: #10b981;">✓ 완료</div>`;
+    }
 
     const issuesHtml = review.issues && review.issues.length > 0
       ? `<div class="mt-3">
@@ -249,36 +363,50 @@ function initCodeReviewDemo() {
         </div>`
       : '';
 
+    // If no structured content, show raw content
+    const contentHtml = (!issuesHtml && !commentsHtml && review.rawContent)
+      ? `<div class="mt-3 text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(review.rawContent)}</div>`
+      : '';
+
     body.innerHTML = `
       ${scoreBadge}
       ${issuesHtml}
       ${commentsHtml}
+      ${contentHtml}
     `;
   }
 
-  function renderSummary(step) {
-    const overallScore = step.overallScore || calculateOverallScore();
+  function renderSummary(step, parsedOverallScore) {
+    const overallScore = parsedOverallScore || step.overallScore || calculateOverallScore();
     const scoreColor = getScoreColor(overallScore);
+
+    // Extract summary text from step.content or step.summary
+    const summaryText = step.summary || (step.content && typeof step.content === 'string' ? step.content : '');
 
     summaryPanel.innerHTML = `
       <div class="p-4">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-semibold text-lg">종합 평가</h3>
-          <div class="overall-score-badge" style="background: ${scoreColor};">
-            ${overallScore.toFixed(1)}/10
-          </div>
+          ${overallScore !== null && overallScore !== undefined ? `
+            <div class="overall-score-badge" style="background: ${scoreColor};">
+              ${overallScore.toFixed(1)}/10
+            </div>
+          ` : ''}
         </div>
-        ${step.summary ? `
-          <p class="text-gray-700 mb-3">${escapeHtml(step.summary)}</p>
+        ${summaryText ? `
+          <p class="text-gray-700 mb-3 whitespace-pre-wrap">${escapeHtml(summaryText)}</p>
         ` : ''}
         <div class="grid grid-cols-2 gap-2 text-sm">
           ${REVIEW_CATEGORIES.map(cat => {
             const review = reviews[cat.id];
             if (!review) return '';
+            const scoreDisplay = review.score !== null && review.score !== undefined
+              ? `${review.score}/10`
+              : '✓';
             return `
               <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <span>${cat.name}</span>
-                <span class="font-semibold" style="color: ${cat.color};">${review.score}/10</span>
+                <span class="font-semibold" style="color: ${cat.color};">${scoreDisplay}</span>
               </div>
             `;
           }).join('')}

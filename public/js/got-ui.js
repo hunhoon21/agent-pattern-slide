@@ -12,7 +12,7 @@ window.gotResults = null;
 function initGotDemo() {
   const input = document.getElementById('got-input');
   const sendBtn = document.getElementById('got-send');
-  const svgContainer = document.getElementById('got-graph-svg');
+  const svgContainer = document.getElementById('got-graph-container');
   const detailPanel = document.getElementById('got-detail-panel');
 
   if (!input || !sendBtn || !svgContainer || !detailPanel) return;
@@ -94,26 +94,75 @@ function initGotDemo() {
     }
   }
 
+  function updateStatus(stepType) {
+    // Find or create status display element
+    let statusEl = document.getElementById('got-status');
+    if (!statusEl) {
+      statusEl = document.createElement('div');
+      statusEl.id = 'got-status';
+      statusEl.className = 'text-sm text-gray-600 mb-2';
+      svgContainer.parentElement.insertBefore(statusEl, svgContainer);
+    }
+
+    const statusMessages = {
+      'thought_node': '사고 생성 중...',
+      'evaluation': '평가 중...',
+      'synthesis': '합성 중...',
+      'final': '완료'
+    };
+
+    statusEl.textContent = statusMessages[stepType] || '처리 중...';
+  }
+
+  function updateTokenCounter(totalTokens) {
+    // Update the existing token counter element
+    const tokenEl = document.getElementById('got-token-count');
+    if (tokenEl) {
+      tokenEl.textContent = totalTokens.toLocaleString();
+    }
+  }
+
   function handleStep(step) {
     allSteps.push(step);
 
+    // Update status display
+    updateStatus(step.type);
+
+    // Update token counter if available
+    if (step.tokenUsage && step.tokenUsage.total_tokens) {
+      updateTokenCounter(step.tokenUsage.total_tokens);
+    }
+
     if (step.type === 'thought_node') {
-      addThoughtNode(step.node);
-      renderGraph();
+      // Construct node from step.data
+      if (step.data && step.data.thought_id !== undefined) {
+        const node = {
+          id: step.data.thought_id,
+          parentId: step.data.parent_id,
+          level: step.data.level || 0,
+          content: step.content || ''
+        };
+        addThoughtNode(node);
+        renderGraph();
+      }
     } else if (step.type === 'evaluation') {
-      updateNodeScore(step.nodeId, step.score);
+      // Extract from step.data
+      if (step.data && step.data.thought_id !== undefined && step.data.score !== undefined) {
+        updateNodeScore(step.data.thought_id, step.data.score, step.content);
+      }
     } else if (step.type === 'synthesis') {
       // Highlight best path
-      if (step.bestPath) {
-        highlightBestPath(step.bestPath);
+      if (step.data && step.data.best_path) {
+        highlightBestPath(step.data.best_path);
       }
     } else if (step.type === 'final') {
       // Show final result in detail panel if no node selected
+      // Use step.content instead of step.result
       if (!selectedNodeId) {
         detailPanel.innerHTML = `
           <div class="p-4">
             <h3 class="font-semibold text-lg mb-2">최종 결과</h3>
-            <p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(step.result)}</p>
+            <p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(step.content || '')}</p>
           </div>
         `;
       }
@@ -121,7 +170,7 @@ function initGotDemo() {
   }
 
   function addThoughtNode(node) {
-    if (!node || !node.id) return; // Guard against undefined/invalid nodes
+    if (!node || node.id === undefined || node.id === null) return; // Guard against undefined/invalid nodes
 
     const existingIndex = nodes.findIndex(n => n.id === node.id);
     if (existingIndex >= 0) {
@@ -130,16 +179,19 @@ function initGotDemo() {
       nodes.push(node);
     }
 
-    // Add edge if parent exists
-    if (node.parentId && !edges.find(e => e.from === node.parentId && e.to === node.id)) {
+    // Add edge if parent exists (parentId is not null/undefined)
+    if (node.parentId !== null && node.parentId !== undefined && !edges.find(e => e.from === node.parentId && e.to === node.id)) {
       edges.push({ from: node.parentId, to: node.id });
     }
   }
 
-  function updateNodeScore(nodeId, score) {
+  function updateNodeScore(nodeId, score, evaluation) {
     const node = nodes.find(n => n.id === nodeId);
     if (node) {
       node.score = score;
+      if (evaluation) {
+        node.evaluation = evaluation;
+      }
       renderGraph();
     }
   }
@@ -256,7 +308,7 @@ function initGotDemo() {
     const levels = {};
 
     // Find root nodes (no parents)
-    const roots = nodes.filter(n => n && n.id && !n.parentId);
+    const roots = nodes.filter(n => n && n.id !== undefined && n.id !== null && (n.parentId === null || n.parentId === undefined));
     if (roots.length === 0 && nodes.length > 0) {
       roots.push(nodes[0]);
     }
@@ -267,7 +319,7 @@ function initGotDemo() {
 
     while (queue.length > 0) {
       const { node, level } = queue.shift();
-      if (!node || !node.id || visited.has(node.id)) continue;
+      if (!node || node.id === undefined || node.id === null || visited.has(node.id)) continue;
       visited.add(node.id);
 
       levels[node.id] = level;
