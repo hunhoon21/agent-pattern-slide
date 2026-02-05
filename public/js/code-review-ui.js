@@ -141,15 +141,48 @@ function initCodeReviewDemo() {
     }
   }
 
+  /**
+   * Extract JSON from content, handling markdown code blocks
+   */
+  function extractJson(content) {
+    if (!content) return null;
+
+    // Try direct JSON parse first
+    try {
+      return JSON.parse(content);
+    } catch {}
+
+    // Try to extract JSON from markdown code blocks
+    // Match ```json { ... } ``` or ``` { ... } ```
+    const codeBlockPattern = /```(?:json)?\s*(\{[\s\S]*?\})\s*```/;
+    const match = content.match(codeBlockPattern);
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch {}
+    }
+
+    // Try to find JSON object embedded in text
+    const jsonPattern = /\{[\s\S]*"[^"]+"\s*:[\s\S]*\}/;
+    const jsonMatch = content.match(jsonPattern);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch {}
+    }
+
+    return null;
+  }
+
   function parseScore(content) {
     if (!content) return null;
 
-    // Try JSON parse first
-    try {
-      const json = JSON.parse(content);
+    // Try JSON extraction first (handles markdown code blocks)
+    const json = extractJson(content);
+    if (json) {
       if (json.score !== undefined) return json.score;
       if (json.rating !== undefined) return json.rating;
-    } catch {}
+    }
 
     // Try regex patterns
     const patterns = [
@@ -176,19 +209,47 @@ function initCodeReviewDemo() {
 
     const result = { issues: [], comments: [] };
 
-    // Try JSON parse first
-    try {
-      const json = JSON.parse(content);
+    // Try JSON extraction first (handles markdown code blocks)
+    const json = extractJson(content);
+    if (json) {
+      // Handle issues array
       if (json.issues) {
         const issues = Array.isArray(json.issues) ? json.issues : [json.issues];
-        result.issues = issues.map(issue => typeof issue === 'object' ? (issue.description || JSON.stringify(issue)) : String(issue));
+        result.issues = issues.map(issue => {
+          if (typeof issue === 'object') {
+            // Format: [severity] description
+            const severity = issue.severity || 'INFO';
+            const desc = issue.description || issue.message || JSON.stringify(issue);
+            return `[${severity}] ${desc}`;
+          }
+          return String(issue);
+        });
       }
+
+      // Handle suggestions array - map to comments
+      if (json.suggestions) {
+        const suggestions = Array.isArray(json.suggestions) ? json.suggestions : [json.suggestions];
+        result.comments = suggestions.map(suggestion => {
+          if (typeof suggestion === 'object') {
+            return suggestion.description || suggestion.text || JSON.stringify(suggestion);
+          }
+          return String(suggestion);
+        });
+      }
+
+      // Also handle comments field if present
       if (json.comments) {
         const comments = Array.isArray(json.comments) ? json.comments : [json.comments];
-        result.comments = comments.map(comment => typeof comment === 'object' ? (comment.description || comment.text || JSON.stringify(comment)) : String(comment));
+        result.comments.push(...comments.map(comment => {
+          if (typeof comment === 'object') {
+            return comment.description || comment.text || JSON.stringify(comment);
+          }
+          return String(comment);
+        }));
       }
+
       return result;
-    } catch {}
+    }
 
     // Parse plain text - split by lines
     const lines = content.split('\n').map(l => l.trim()).filter(l => l);
@@ -377,11 +438,122 @@ function initCodeReviewDemo() {
   }
 
   function renderSummary(step, parsedOverallScore) {
-    const overallScore = parsedOverallScore || step.overallScore || calculateOverallScore();
+    let overallScore = parsedOverallScore || step.overallScore || calculateOverallScore();
+    let summaryText = step.summary || '';
+    let verdict = null;
+    let criticalIssues = [];
+    let recommendations = [];
+
+    // Try to parse JSON summary from step.content
+    const summaryJson = extractJson(step.content);
+    if (summaryJson) {
+      // Extract overall_score
+      if (summaryJson.overall_score !== undefined) {
+        overallScore = summaryJson.overall_score;
+      }
+
+      // Extract category_scores and update reviews object
+      if (summaryJson.category_scores) {
+        Object.entries(summaryJson.category_scores).forEach(([category, score]) => {
+          if (reviews[category]) {
+            reviews[category].score = score;
+            // Re-render the card with updated score
+            updateReviewCard(category, reviews[category]);
+            updateCardStatus(category, 'complete');
+          }
+        });
+      }
+
+      // Extract verdict
+      if (summaryJson.verdict) {
+        verdict = summaryJson.verdict;
+      }
+
+      // Extract critical_issues
+      if (summaryJson.critical_issues) {
+        criticalIssues = Array.isArray(summaryJson.critical_issues)
+          ? summaryJson.critical_issues
+          : [summaryJson.critical_issues];
+      }
+
+      // Extract recommendations
+      if (summaryJson.recommendations) {
+        recommendations = Array.isArray(summaryJson.recommendations)
+          ? summaryJson.recommendations
+          : [summaryJson.recommendations];
+      }
+
+      // Override summaryText with a cleaner display (not raw JSON)
+      summaryText = '';
+    } else if (step.content && typeof step.content === 'string') {
+      // Fallback: use content as summary text if not JSON
+      summaryText = step.content;
+    }
+
     const scoreColor = getScoreColor(overallScore);
 
-    // Extract summary text from step.content or step.summary
-    const summaryText = step.summary || (step.content && typeof step.content === 'string' ? step.content : '');
+    // Build verdict badge HTML
+    let verdictHtml = '';
+    if (verdict) {
+      let verdictColor = '#10b981'; // green
+      let verdictText = '승인';
+      if (verdict === 'needs_changes') {
+        verdictColor = '#f59e0b'; // orange
+        verdictText = '수정 필요';
+      } else if (verdict === 'reject') {
+        verdictColor = '#ef4444'; // red
+        verdictText = '거부';
+      }
+      verdictHtml = `
+        <div class="mb-3">
+          <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold" style="background: ${verdictColor}; color: white;">
+            ${verdictText}
+          </span>
+        </div>
+      `;
+    }
+
+    // Build critical issues HTML
+    let criticalIssuesHtml = '';
+    if (criticalIssues.length > 0) {
+      criticalIssuesHtml = `
+        <div class="mb-3">
+          <p class="font-semibold mb-2 flex items-center gap-2">
+            <span class="text-red-500">⚠️</span>
+            주요 이슈
+          </p>
+          <ul class="text-sm space-y-1 pl-4">
+            ${criticalIssues.map(issue => `
+              <li class="flex items-start gap-2">
+                <span class="text-red-500 mt-0.5">•</span>
+                <span>${escapeHtml(String(issue))}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // Build recommendations HTML
+    let recommendationsHtml = '';
+    if (recommendations.length > 0) {
+      recommendationsHtml = `
+        <div class="mb-3">
+          <p class="font-semibold mb-2 flex items-center gap-2">
+            <span class="text-yellow-500">💡</span>
+            권장사항
+          </p>
+          <ul class="text-sm space-y-1 pl-4">
+            ${recommendations.map(rec => `
+              <li class="flex items-start gap-2">
+                <span class="text-blue-500 mt-0.5">•</span>
+                <span>${escapeHtml(String(rec))}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
 
     summaryPanel.innerHTML = `
       <div class="p-4">
@@ -393,6 +565,9 @@ function initCodeReviewDemo() {
             </div>
           ` : ''}
         </div>
+        ${verdictHtml}
+        ${criticalIssuesHtml}
+        ${recommendationsHtml}
         ${summaryText ? `
           <p class="text-gray-700 mb-3 whitespace-pre-wrap">${escapeHtml(summaryText)}</p>
         ` : ''}
@@ -416,7 +591,7 @@ function initCodeReviewDemo() {
   }
 
   function calculateOverallScore() {
-    const scores = Object.values(reviews).map(r => r.score).filter(s => s !== undefined);
+    const scores = Object.values(reviews).map(r => r.score).filter(s => s !== undefined && s !== null);
     if (scores.length === 0) return 0;
     return scores.reduce((a, b) => a + b, 0) / scores.length;
   }
